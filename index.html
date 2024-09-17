@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>드래그 가능한 위젯들과 토글 가능한 가사 박스</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+            overflow: hidden;
+            height: 100vh;
+            position: relative; /* 비디오가 body에 맞게 위치할 수 있도록 */
+        }
+        .nightWidget, .lyricsBox {
+            background: #505050;
+            box-shadow: 0px 6px 4px rgba(0, 0, 0, 0.25);
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            position: absolute;
+            cursor: move;
+        }
+        .nightWidget {
+            width: 292px;
+            height: 200px;
+            gap: 31px;
+        }
+        .lyricsBox {
+            width: 409px;
+            height: 653px;
+            padding: 20px;
+            display: none;
+        }
+        .frame2 {
+            width: 100%;
+            height: 31px;
+            background: #9B9B9B;
+        }
+        .nightText {
+            align-self: stretch;
+            text-align: center;
+            color: white;
+            font-size: 40px;
+            font-weight: 400;
+        }
+        .group1 {
+            width: 64px;
+            height: 21px;
+            position: relative;
+        }
+        .frame3 {
+            width: 64px;
+            height: 21px;
+            position: absolute;
+            background: #6B6B6B;
+        }
+        .frame4 {
+            width: 60px;
+            height: 17px;
+            left: 2px;
+            top: 2px;
+            position: absolute;
+            border: 1px #5F5F5F dotted;
+        }
+        .onOff {
+            width: 28px;
+            height: 12px;
+            left: 20px;
+            top: 4px;
+            position: absolute;
+            text-align: center;
+            color: white;
+            font-size: 10px;
+            font-weight: 400;
+        }
+        .lyricsText {
+            color: white;
+            font-size: 20px;
+            font-family: Pretendard, sans-serif;
+            font-weight: 200;
+            line-height: 40px;
+            word-wrap: break-word;
+        }
+        
+        
+        a {
+    text-decoration: none; /* 밑줄 제거 */
+    color: inherit; /* 기본 텍스트 색상 사용 */
+}
+    </style>
+</head>
+<body>
+  
+    <div id="nightWidget1" class="nightWidget">
+        <div class="frame2"></div>
+        <div class="nightText">夜</div>
+        <div class="group1">
+            <div class="frame3"></div>
+            <div class="frame4"></div>
+            <div id="numberone" class="onOff">on/off</div>
+        </div>
+    </div>
+
+    <div id="nightWidget2" class="nightWidget">
+        <div class="frame2"></div>
+        <div class="nightText">文</div>
+        <div class="group1">
+            <div class="frame3"></div>
+            <div class="frame4"></div>
+            <div id="numbertwo" class="onOff">on/off</div>
+        </div>
+    </div>
+
+    <div id="nightWidget3" class="nightWidget">
+        <div class="frame2"></div>
+        <div class="nightText">音</div>
+        <div class="group1">
+            <div class="frame3"></div>
+            <div class="frame4"></div>
+            <div id="numberthree" class="onOff">on/off</div>
+        </div>
+    </div>
+    
+    <audio id="myAudio" src="blackmountain.mp3"></audio>
+    
+    <div id="lyricsBox" class="lyricsBox">
+        <div class="lyricsText">
+            달빛은 강물을 적시고 바람은 노래를 부른다<br/>
+            나는 달려간다 검은 산을 넘어<br/>
+            나를 기다리는 너에게 커다란 나무의 그림자<br/>
+            무서운 늑대의 울음소리 자꾸 넘어진다<br/>
+            발길이 멈춘다 밤은 고요하게 깊어간다<br/>
+            숨이 차오른다 어디쯤 다다른걸까<br/>
+            울먹임을 삼켜낸다 검은 산을 넘으면<br/>
+            너는 날 안아 주겠지 다시 또 한걸음을 딛는다<br/>
+            숨이 차오른다 어디쯤 다다른걸까<br/>
+            울먹임을 삼켜낸다 검은 산을 넘으면<br/>
+            너는 날 안아주겠지 다시 또 한걸음을 딛는다<br/>
+            달빛은 산길을 비추고 바람은 노래를 부른다<br/>
+            나는 달려간다 검은 산을 넘어<br/>
+            나를 기다리는 너에게
+        </div>
+    </div>
+
+
+
+    <script>
+        const draggables = document.querySelectorAll('.nightWidget, .lyricsBox');
+        let active = null;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+
+        // 초기 위치 설정
+        function setInitialPositions() {
+            const margin = 20;
+            const nightWidgets = document.querySelectorAll('.nightWidget');
+            nightWidgets.forEach((widget, index) => {
+                widget.style.left = `${margin + (index * (292 + margin))}px`;
+                widget.style.top = `${margin}px`;
+            });
+            const lyricsBox = document.getElementById('lyricsBox');
+            lyricsBox.style.right = `${margin}px`;
+            lyricsBox.style.bottom = `${margin}px`;
+        }
+
+        setInitialPositions();
+
+        draggables.forEach(elem => {
+            elem.addEventListener('mousedown', dragStart, true);
+            elem.addEventListener('mouseup', dragEnd, true);
+            elem.addEventListener('mousemove', drag, true);
+        });
+
+        document.addEventListener('mousemove', drag, true);
+        document.addEventListener('mouseup', dragEnd, true);
+
+        function dragStart(e) {
+            if (e.target === e.currentTarget || e.target.className === 'lyricsText') {
+                active = e.currentTarget;
+                initialX = e.clientX - active.offsetLeft;
+                initialY = e.clientY - active.offsetTop;
+                active.style.zIndex = 1000;  // 드래그 중인 요소를 최상위로
+            }
+        }
+
+        function dragEnd(e) {
+            if (active) {
+                active.style.zIndex = 1;  // zIndex 초기화
+                active = null;
+                checkOverlap();
+            }
+        }
+
+        function drag(e) {
+            if (active) {
+                e.preventDefault();
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+
+                // 화면 경계 확인
+                currentX = Math.max(0, Math.min(currentX, window.innerWidth - active.offsetWidth));
+                currentY = Math.max(0, Math.min(currentY, window.innerHeight - active.offsetHeight));
+
+                setTranslate(currentX, currentY, active);
+            }
+        }
+
+        function setTranslate(xPos, yPos, el) {
+            el.style.left = `${xPos}px`;
+            el.style.top = `${yPos}px`;
+        }
+        
+        let isBlackBackground = false;
+
+        document.getElementById('numberone').onclick = function() {
+            if (isBlackBackground) {
+                document.body.style.backgroundImage = 'url(original.jpg)'; // 원래 배경화면
+            } else {
+                document.body.style.backgroundImage = 'url(black2.jpg)';
+            }
+            isBlackBackground = !isBlackBackground; // 상태를 반전시킴
+        }
+
+        // 가사 박스 토글 기능
+        let isLyricsVisible = false;
+        const lyricsBox = document.getElementById('lyricsBox');
+
+               document.getElementById('numbertwo').onclick = function() {
+            if (isLyricsVisible) {
+                lyricsBox.style.display = 'none';
+            } else {
+                lyricsBox.style.display = 'flex';
+            }
+            isLyricsVisible = !isLyricsVisible;
+        }
+        
+        document.getElementById('numberthree').addEventListener('click', function() {
+            var audio = document.getElementById('myAudio');
+            if (audio.paused) {
+                audio.play();
+            } else {
+                audio.pause();
+            }
+        });
+
+        // 위젯 겹침 확인 및 새 위젯 생성 함수
+        function checkOverlap() {
+            const widgets = [
+                document.getElementById('nightWidget1'),
+                document.getElementById('nightWidget2'),
+                document.getElementById('nightWidget3')
+            ];
+            
+            const rects = widgets.map(w => w.getBoundingClientRect());
+            
+            if (areOverlapping(rects[0], rects[1]) && areOverlapping(rects[1], rects[2]) && areOverlapping(rects[0], rects[2])) {
+                createStarWidget();
+            }
+        }
+
+        function areOverlapping(rect1, rect2) {
+            return !(rect1.right < rect2.left || 
+                     rect1.left > rect2.right || 
+                     rect1.bottom < rect2.top || 
+                     rect1.top > rect2.bottom);
+        }
+
+        function createStarWidget() {
+            if (!document.getElementById('starWidget')) {
+                const starWidget = document.createElement('div');
+                starWidget.id = 'starWidget';
+                starWidget.className = 'nightWidget';
+                starWidget.innerHTML = `
+                    <div class="frame2"></div>
+                    <div class="nightText">星</div>
+                    <div class="group1">
+                        <div class="frame3"></div>
+                        <div class="frame4"></div>
+                        <div id="star" class="onOff"><a href=https://youtu.be/3JbBbY4S11w target="_blank">Go!</a></div>
+                    </div>
+                `;
+                document.body.appendChild(starWidget);
+                
+                // 새 위젯을 화면 중앙에 배치
+                const rect = starWidget.getBoundingClientRect();
+                starWidget.style.left = `${(window.innerWidth - rect.width) / 2}px`;
+                starWidget.style.top = `${(window.innerHeight - rect.height) / 2}px`;
+                
+                // 드래그 이벤트 추가
+                starWidget.addEventListener('mousedown', dragStart, true);
+                starWidget.addEventListener('mouseup', dragEnd, true);
+                starWidget.addEventListener('mousemove', drag, true);
+            }
+        }
+        
+      
+        
+     
+    </script>
+</body>
+</html>
